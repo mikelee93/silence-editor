@@ -8,7 +8,7 @@
     "dev": "nodemon --watch server.js --ext js server.js",
     "build:exe": "electron-builder --win portable",
     "build:installer": "electron-builder --win nsis",
-    "build:mac": "electron-builder --mac zip dmg --arm64 --x64",
+    "build:mac": "electron-builder --mac",
     "build:all": "electron-builder -mw"
   },
   "build": {

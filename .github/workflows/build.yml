@@ -45,3 +45,4 @@ jobs:
             dist/*.exe
             dist/*.dmg
             dist/*.zip
+          if-no-files-found: warn
