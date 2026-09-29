@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -22,7 +23,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps --ignore-scripts
+        run: npm install --no-audit
 
       - name: Build Windows Executable (.exe)
         if: matrix.os == 'windows-latest'
