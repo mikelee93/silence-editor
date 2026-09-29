@@ -1,0 +1,5 @@
+# 의존성 및 빌드 결과물 제외 (GitHub Actions에서 새로 설치/빌드함)
+node_modules/
+dist/
+.DS_Store
+*.log

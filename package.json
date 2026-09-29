@@ -1,0 +1,119 @@
+{
+  "name": "silence-remover-editor",
+  "version": "1.0.0",
+  "description": "✂️ 무음 제거 & 배속 조절 에디터 - 독립 데스크톱 앱",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "nodemon --watch server.js --ext js server.js",
+    "build:exe": "electron-builder --win portable",
+    "build:installer": "electron-builder --win nsis",
+    "build:mac": "electron-builder --mac zip dmg --arm64 --x64",
+    "build:all": "electron-builder -mw"
+  },
+  "build": {
+    "asar": false,
+    "appId": "com.gogohat.silence-editor",
+    "productName": "무음 제거 에디터",
+    "copyright": "Copyright © 2026 고고햇 Lab",
+    "win": {
+      "icon": "public/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.video",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "무음 제거 에디터",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "public/icon.ico",
+      "uninstallerIcon": "public/icon.ico",
+      "installerHeaderIcon": "public/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "무음 제거 에디터"
+    },
+    "files": [
+      "electron-main.js",
+      "server.js",
+      "silence.service.js",
+      "public/**",
+      "node_modules/**",
+      "!node_modules/electron/**",
+      "!node_modules/electron-builder/**"
+    ],
+    "extraResources": [
+      {
+        "from": "bin/ffmpeg.exe",
+        "to": "bin/ffmpeg.exe"
+      }
+    ]
+  },
+  "keywords": [
+    "무음제거",
+    "audio",
+    "ffmpeg",
+    "electron"
+  ],
+  "author": "고고햇 Lab",
+  "license": "MIT",
+  "dependencies": {
+    "@ffmpeg-installer/darwin-arm64": "^4.1.5",
+    "@ffmpeg-installer/darwin-x64": "^4.1.0",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "express": "^4.22.3",
+    "fluent-ffmpeg": "^2.1.3",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "nodemon": "^3.1.0"
+  }
+}

@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✂️ 무음 제거 에디터</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+        --bg: #0b1329;
+        --surface: rgba(30, 41, 59, 0.6);
+        --surface2: rgba(15, 23, 42, 0.6);
+        --border: rgba(255,255,255,0.08);
+        --text: #f8fafc;
+        --text-muted: #94a3b8;
+        --text-secondary: #cbd5e1;
+        --blue: #38bdf8;
+        --green: #4ade80;
+        --yellow: #facc15;
+        --red: #f87171;
+        --purple: #a78bfa;
+        --accent: #2563eb;
+    }
+    html, body {
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+        overflow: hidden;
+    }
+    body {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    /* ── Title Bar ── */
+    .titlebar {
+        background: linear-gradient(90deg, #0f172a, #1e293b);
+        border-bottom: 1px solid rgba(56,189,248,0.2);
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+        -webkit-app-region: drag;
+        user-select: none;
+    }
+    .titlebar-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .titlebar-badge {
+        font-size: 10px;
+        color: #ec4899;
+        background: rgba(236,72,153,0.15);
+        padding: 2px 8px;
+        border-radius: 10px;
+        border: 1px solid rgba(236,72,153,0.3);
+        font-weight: 600;
+    }
+    .titlebar-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-left: auto;
+    }
+
+    /* ── Main Content ── */
+    .main-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    /* ── Cards ── */
+    .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 22px;
+    }
+    .card-blue {
+        background: linear-gradient(180deg, #075985 0%, #0c4a6e 100%);
+        border: 1px solid rgba(56,189,248,0.3);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        position: relative;
+    }
+    .section-title {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--blue);
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* ── File Open Area ── */
+    .file-open-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .btn-open-file {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 40px;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 13px;
+        padding: 0 20px;
+        box-shadow: 0 4px 12px rgba(245,158,11,0.25);
+        transition: opacity .2s;
+    }
+    .btn-open-file:hover { opacity: 0.9; }
+    .btn-reset {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.12);
+        color: var(--text-secondary);
+        font-size: 12px;
+        height: 40px;
+        padding: 0 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background .2s;
+    }
+    .btn-reset:hover { background: rgba(255,255,255,0.1); }
+
+    /* ── Meta chips ── */
+    #silenceMetaChips {
+        display: none;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 16px;
+        gap: 14px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    /* ── Notice Banner ── */
+    #silenceNoticeBanner {
+        display: none;
+        padding: 12px 18px;
+        background: rgba(34,197,94,0.12);
+        border: 1px solid rgba(34,197,94,0.3);
+        border-radius: 10px;
+        font-size: 12px;
+        color: #4ade80;
+        font-weight: 700;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* ── Waveform Controls ── */
+    .waveform-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: #0b1329;
+        padding: 12px 20px;
+        border-radius: 14px;
+        border: 1px solid rgba(56,189,248,0.25);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        flex-wrap: wrap;
+    }
+    .btn-play {
+        background: #1e293b;
+        border: 1px solid rgba(255,255,255,0.15);
+        color: #fff;
+        width: 44px; height: 44px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px; cursor: pointer; flex-shrink: 0; transition: background .2s;
+    }
+    .btn-play:hover { background: #334155; }
+    .speed-track {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(255,255,255,0.05);
+        padding: 8px 18px;
+        border-radius: 24px;
+        border: 1px solid rgba(255,255,255,0.08);
+        min-width: 260px;
+    }
+    .speed-track input[type=range] { flex: 1; accent-color: #4ade80; cursor: pointer; }
+    .btn-save-final {
+        background: #fff;
+        border: none;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 800;
+        padding: 10px 26px;
+        border-radius: 20px;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(255,255,255,0.2);
+        transition: transform .2s;
+    }
+    .btn-save-final:hover:not(:disabled) { transform: scale(1.04); }
+    .btn-save-final:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── 2-column grid ── */
+    .controls-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 16px;
+    }
+
+    /* ── Preset buttons ── */
+    .preset-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .preset-btn {
+        padding: 5px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: var(--text-secondary);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all .2s;
+    }
+    .preset-btn:hover { background: rgba(255,255,255,0.12); }
+    .preset-btn.active { background: rgba(56,189,248,0.2); border-color: rgba(56,189,248,0.5); color: #fff; }
+    .preset-btn.yellow { background: rgba(250,204,21,0.15); color: var(--yellow); border-color: rgba(250,204,21,0.3); }
+
+    /* ── Sliders ── */
+    .slider-box { display: flex; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+    .slider-label-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+    input[type=range] { width: 100%; }
+
+    /* ── Detect button ── */
+    .btn-detect {
+        width: 100%; height: 38px;
+        background: rgba(56,189,248,0.15);
+        border: 1px solid rgba(56,189,248,0.4);
+        color: var(--blue);
+        font-weight: 700; font-size: 13px;
+        border-radius: 8px; cursor: pointer;
+        transition: all .2s;
+    }
+    .btn-detect:hover:not(:disabled) { background: rgba(56,189,248,0.25); }
+    .btn-detect:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Speed chip buttons ── */
+    .speed-chips { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .speed-chip {
+        padding: 3px 10px; font-size: 10.5px; font-weight: 700;
+        background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+        color: var(--text-secondary); border-radius: 4px; cursor: pointer;
+        transition: all .2s;
+    }
+    .speed-chip:hover { background: rgba(255,255,255,0.12); }
+    .speed-chip.hl { background: rgba(250,204,21,0.2); color: var(--yellow); border-color: rgba(250,204,21,0.4); }
+
+    /* ── KPI metrics ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .kpi-cell { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 8px 10px; }
+
+    /* ── Action bar ── */
+    .action-bar {
+        background: rgba(30,41,59,0.5);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+    .action-btns { display: flex; gap: 10px; flex-wrap: nowrap; }
+    .btn-action {
+        height: 42px; padding: 0 20px; font-size: 13.5px; font-weight: 800;
+        border: 1px solid; border-radius: 8px; cursor: pointer; white-space: nowrap;
+        transition: transform .2s;
+    }
+    .btn-action:hover:not(:disabled) { transform: scale(1.02); }
+    .btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-apply { background: #2563eb; border-color: #3b82f6; color: #fff; box-shadow: 0 4px 14px rgba(37,99,235,0.4); }
+    .btn-download { background: #10b981; border-color: #10b981; color: #fff; box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+    .btn-srt { background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-color: #8b5cf6; color: #fff; box-shadow: 0 4px 14px rgba(139,92,246,0.35); }
+
+    /* ── Silence list ── */
+    #silenceDetailList { max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
+    .silence-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 11px; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── Format select ── */
+    .fmt-select { background: #1e293b; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 12px; font-weight: 700; padding: 10px 14px; border-radius: 10px; cursor: pointer; outline: none; }
+
+    /* Legend dots */
+    .legend { display: flex; gap: 14px; align-items: center; font-size: 11px; color: #bae6fd; font-weight: 600; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* Toast */
+    #toastMsg { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.95); border: 1px solid rgba(56,189,248,0.3); color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 13px; font-weight: 700; z-index: 9999; pointer-events: none; opacity: 0; transition: opacity .3s; }
+    #toastMsg.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- 타이틀바 -->
+<div class="titlebar">
+    <div class="titlebar-title">
+        ✂️ 무음 제거 에디터
+        <span class="titlebar-badge">FFmpeg Engine</span>
+    </div>
+    <div class="titlebar-sub">오디오/영상 파일의 무음 구간을 자동 컷팅하고 배속을 조절하여 저장합니다. (API 비용 0원)</div>
+</div>
+
+<!-- 메인 영역 -->
+<div class="main-content" id="mainContent">
+
+    <!-- 파일 열기 (클릭 & 드래그 앤 드롭 지원) -->
+    <div class="card" id="fileDropCard" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;cursor:pointer;border:2px dashed rgba(56,189,248,0.3);transition:all .2s;" 
+         onclick="if(event.target.tagName !== 'BUTTON') document.getElementById('silenceFileInput').click()"
+         ondragover="event.preventDefault();this.style.borderColor='#38bdf8';this.style.background='rgba(56,189,248,0.1)';"
+         ondragleave="this.style.borderColor='rgba(56,189,248,0.3)';this.style.background='var(--surface)';"
+         ondrop="event.preventDefault();this.style.borderColor='rgba(56,189,248,0.3)';this.style.background='var(--surface)';if(event.dataTransfer.files.length) onSilenceFileSelected({target:{files:event.dataTransfer.files}});">
+        <div>
+            <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+                <span>📁 오디오 / 영상 파일 불러오기</span>
+                <span style="font-size:10.5px;color:var(--blue);background:rgba(56,189,248,0.15);padding:2px 8px;border-radius:6px;">여기로 드래그 & 드롭 가능</span>
+            </div>
+            <div style="font-size:11.5px;color:var(--text-muted);">WAV · MP3 · MP4 · M4A · AAC · OGG · FLAC · MKV · MOV 등 모든 파일 지원</div>
+        </div>
+        <div class="file-open-row">
+            <input type="file" id="silenceFileInput" accept="audio/*,video/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.mp4,.mkv,.mov,.webm,.avi" style="display:none" onchange="onSilenceFileSelected(event)">
+            <button class="btn-open-file" onclick="document.getElementById('silenceFileInput').click()">
+                📂 파일 열기
+            </button>
+            <button class="btn-reset" onclick="resetSilenceEditor()">🔄 초기화</button>
+        </div>
+    </div>
+
+    <!-- 메타 칩 -->
+    <div id="silenceMetaChips" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;gap:14px;flex-wrap:wrap;align-items:center;">
+        <div style="font-size:11px;color:var(--text-muted);">파일명: <strong id="silenceChipName" style="color:#fff;">-</strong></div>
+        <div style="font-size:11px;color:var(--text-muted);">크기: <strong id="silenceChipSize" style="color:var(--blue);">-</strong></div>
+        <div style="font-size:11px;color:var(--text-muted);">원본 길이: <strong id="silenceChipDuration" style="color:var(--yellow);">-</strong></div>
+        <div style="font-size:11px;color:var(--text-muted);">샘플레이트: <strong id="silenceChipSampleRate" style="color:var(--text-secondary);">-</strong></div>
+        <div style="font-size:11px;color:var(--text-muted);">채널: <strong id="silenceChipChannels" style="color:var(--text-secondary);">-</strong></div>
+    </div>
+
+    <!-- 안내 배너 -->
+    <div id="silenceNoticeBanner" style="display:none;padding:12px 18px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);border-radius:10px;font-size:12px;color:#4ade80;font-weight:700;align-items:center;gap:10px;">
+        <span>💡</span>
+        <span id="silenceNoticeText">무음 구간 감지가 완료되었습니다. 아래 조작 패널에서 [적용하기]를 눌러 결과를 확인하세요.</span>
+    </div>
+
+    <!-- 파형 시각화 영역 -->
+    <div class="card-blue">
+        <!-- 헤더 -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div id="silenceHeaderTitle" style="font-size:15px;font-weight:800;color:#fff;">Original Audio</div>
+                <div id="silenceHeaderBadge" style="font-size:11.5px;font-weight:800;color:var(--yellow);background:rgba(0,0,0,0.35);padding:4px 12px;border-radius:14px;border:1px solid rgba(250,204,21,0.4);font-family:monospace;">감지 0개</div>
+            </div>
+            <div id="silencePlayTime" style="font-size:13px;font-weight:800;color:var(--blue);font-family:monospace;letter-spacing:0.5px;">00:00.0 / 00:00.0</div>
+        </div>
+
+        <!-- 범례 & 탭 -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px;">
+            <div class="legend">
+                <span style="display:flex;align-items:center;gap:6px;"><span class="dot" style="background:#facc15;box-shadow:0 0 6px #facc15;"></span> 무음 감지됨</span>
+                <span style="display:flex;align-items:center;gap:6px;"><span class="dot" style="background:#ef4444;box-shadow:0 0 6px #ef4444;"></span> 제거됨</span>
+                <span style="display:flex;align-items:center;gap:6px;"><span class="dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></span> 유지됨</span>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <div style="display:flex;gap:4px;background:rgba(0,0,0,0.3);padding:3px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);">
+                    <button type="button" onclick="switchSilenceWaveTab('original')" id="btnSilenceTabOrig" style="background:#2563eb;border:none;color:#fff;padding:5px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">원본 파형</button>
+                    <button type="button" onclick="switchSilenceWaveTab('result')" id="btnSilenceTabResult" style="background:transparent;border:none;color:#94a3b8;padding:5px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">결과 파형</button>
+                </div>
+                <span style="font-size:11px;color:#e0f2fe;font-weight:600;">줌:</span>
+                <input type="range" id="silenceWaveZoom" min="1" max="5" step="0.5" value="1" oninput="drawSilenceWaveform()" style="width:80px;accent-color:var(--blue);">
+            </div>
+        </div>
+
+        <!-- 캔버스 -->
+        <div style="position:relative;width:100%;height:150px;background:#082f49;border-radius:8px;overflow:hidden;margin-bottom:15px;border:1px solid rgba(56,189,248,0.2);">
+            <canvas id="silenceWaveformCanvas" width="1200" height="150" style="width:100%;height:100%;display:block;cursor:pointer;" onclick="onSilenceCanvasClick(event)"></canvas>
+        </div>
+
+        <!-- 플레이어 조작바 -->
+        <div class="waveform-bar">
+            <button type="button" id="btnSilencePlayPause" class="btn-play" onclick="toggleSilenceAudioPlay()">▶</button>
+            <div class="speed-track">
+                <span style="font-size:15px;cursor:pointer;" title="천천히" onclick="updateSilenceSpeedRate(0.8)">🐢</span>
+                <input type="range" id="silenceSpeedRateInputPlayer" min="0.5" max="2.0" step="0.05" value="1.0" oninput="updateSilenceSpeedRate(this.value)">
+                <span style="font-size:15px;cursor:pointer;" title="빠르게" onclick="updateSilenceSpeedRate(1.5)">🐇</span>
+                <span id="silencePlayerSpeedVal" style="font-size:13px;font-weight:800;color:var(--green);font-family:monospace;min-width:48px;text-align:right;">1.00x</span>
+            </div>
+            <select class="fmt-select" id="silenceExportFormatPlayer" onchange="syncSilenceExportFormat(this.value)">
+                <option value="wav">wav ▾</option>
+                <option value="mp3">mp3 ▾</option>
+            </select>
+            <button type="button" class="btn-save-final" id="btnSilenceDownloadTop" onclick="downloadSilenceResult()" disabled>저장</button>
+        </div>
+
+        <audio id="silenceAudioPlayer" style="display:none;"></audio>
+    </div>
+
+    <!-- 2-column 컨트롤 -->
+    <div class="controls-grid">
+        <!-- 무음 감지 설정 -->
+        <div class="card">
+            <div class="section-title">
+                ✂️ 1. 무음 감지 설정 (Silence Detection)
+                <span id="silencePresetDesc" style="font-size:10px;color:var(--text-muted);font-weight:500;">팟캐스트 자연스럽게 · -38 dB</span>
+            </div>
+            <div class="preset-row" style="margin-bottom:12px;">
+                <button class="preset-btn" onclick="selectSilencePreset('tight')" id="silencePreset_tight">숨소리 제거 (-26dB)</button>
+                <button class="preset-btn active" onclick="selectSilencePreset('talk')" id="silencePreset_talk">대화 빠르게 (-30dB)</button>
+                <button class="preset-btn" onclick="selectSilencePreset('podcast')" id="silencePreset_podcast">팟캐스트 (-38dB)</button>
+                <button class="preset-btn yellow" onclick="selectSilencePreset('speed_only')" id="silencePreset_speed_only">⚡ 배속만 조절 (무음 유지)</button>
+                <button class="preset-btn" onclick="selectSilencePreset('custom')" id="silencePreset_custom">사용자 정의</button>
+            </div>
+            <div class="slider-box">
+                <div>
+                    <div class="slider-label-row">
+                        <span>노이즈 감지 데시벨 (dB)</span>
+                        <strong id="silenceValDbLabel" style="color:var(--blue);">-30 dB</strong>
+                    </div>
+                    <input type="range" id="silenceNoiseDb" min="-60" max="-10" step="1" value="-30" oninput="document.getElementById('silenceValDbLabel').textContent=this.value+' dB';selectSilencePreset('custom');">
+                </div>
+                <div>
+                    <div class="slider-label-row">
+                        <span>최소 무음 지속 시간 (초)</span>
+                        <strong id="silenceValDurationLabel" style="color:var(--blue);">0.25s</strong>
+                    </div>
+                    <input type="range" id="silenceMinDuration" min="0.1" max="2.0" step="0.05" value="0.25" oninput="document.getElementById('silenceValDurationLabel').textContent=this.value+'s';selectSilencePreset('custom');">
+                </div>
+            </div>
+            <button class="btn-detect" onclick="runSilenceDetection()" id="btnSilenceDetect" disabled style="margin-top:12px;">
+                🔍 무음 구간 감지하기
+            </button>
+        </div>
+
+        <!-- 배속 조절 -->
+        <div class="card">
+            <div class="section-title" style="color:var(--yellow);">
+                ⚡ 2. 재생 속도 (Speed) 조절
+                <span id="silenceSpeedBadge" style="font-size:11px;color:var(--yellow);font-weight:800;background:rgba(250,204,21,0.15);padding:2px 8px;border-radius:6px;border:1px solid rgba(250,204,21,0.3);">1.00x (원래 속도)</span>
+            </div>
+            <div class="slider-box">
+                <div class="slider-label-row">
+                    <span>배속 조절 (0.5x ~ 2.0x)</span>
+                    <span style="font-size:10px;color:var(--text-muted);">atempo 변환</span>
+                </div>
+                <input type="range" id="silenceSpeedRateInputCard" min="0.5" max="2.0" step="0.05" value="1.0" oninput="updateSilenceSpeedRate(this.value)" style="accent-color:var(--yellow);">
+                <div class="speed-chips">
+                    <button class="speed-chip" onclick="setSilenceSpeedPreset(0.8)">0.8x</button>
+                    <button class="speed-chip" onclick="setSilenceSpeedPreset(1.0)">1.0x</button>
+                    <button class="speed-chip hl" onclick="setSilenceSpeedPreset(1.15)">1.15x</button>
+                    <button class="speed-chip" onclick="setSilenceSpeedPreset(1.25)">1.25x</button>
+                    <button class="speed-chip" onclick="setSilenceSpeedPreset(1.5)">1.5x</button>
+                    <button class="speed-chip" onclick="setSilenceSpeedPreset(2.0)">2.0x</button>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+                <span style="font-size:11.5px;font-weight:700;color:var(--text-secondary);">최종 저장 포맷:</span>
+                <select id="silenceExportFormatCard" onchange="syncSilenceExportFormat(this.value)" style="background:rgba(0,0,0,0.3);border:1px solid var(--border);color:#fff;font-size:11px;border-radius:6px;padding:6px 12px;outline:none;font-weight:700;">
+                    <option value="wav" selected>WAV (손실 없는 원본 품질)</option>
+                    <option value="mp3">MP3 (용량 최적화 192k)</option>
+                </select>
+            </div>
+            <div class="kpi-grid" style="margin-top:12px;">
+                <div class="kpi-cell">
+                    <div style="font-size:9px;color:var(--text-muted);">무음 제거</div>
+                    <div id="silenceValRemovedDuration" style="font-size:12.5px;font-weight:800;color:var(--red);">--</div>
+                </div>
+                <div class="kpi-cell">
+                    <div style="font-size:9px;color:var(--text-muted);">최종 예측 길이</div>
+                    <div id="silenceValFinalDuration" style="font-size:12.5px;font-weight:800;color:var(--green);">--</div>
+                </div>
+                <div class="kpi-cell">
+                    <div style="font-size:9px;color:var(--text-muted);">시간 절감률</div>
+                    <div id="silenceValSavedPercent" style="font-size:12.5px;font-weight:800;color:#3b82f6;">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SRT 자막 입력 -->
+    <div class="card" style="border-color:rgba(139,92,246,0.25);">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <label style="font-size:13px;font-weight:700;color:#f8fafc;display:flex;align-items:center;gap:6px;">
+                <span>📝 자막(SRT) 추출용 대본 입력 <span style="font-size:11px;font-weight:500;color:#c084fc;background:rgba(192,132,252,0.15);padding:2px 8px;border-radius:10px;border:1px solid rgba(192,132,252,0.3);">Vrew 스타일 의미 단위 자동 분할</span></span>
+            </label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:6px;background:var(--surface2);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">
+                    <span style="font-size:11.5px;font-weight:700;color:var(--text-secondary);">✂️ 자막 한 줄 최대 길이:</span>
+                    <select id="silenceMaxCharsSelect" style="background:#090d16;border:1px solid rgba(255,255,255,0.2);color:var(--yellow);font-size:11.5px;font-weight:800;border-radius:6px;padding:3px 8px;outline:none;cursor:pointer;">
+                        <option value="10">10자 (Short)</option>
+                        <option value="15" selected>15자 (Vrew 표준 · 숏폼 추천)</option>
+                        <option value="20">20자 (Medium)</option>
+                        <option value="25">25자 (Long)</option>
+                        <option value="0">문장/줄바꿈 원본 그대로</option>
+                    </select>
+                </div>
+                <button onclick="loadSampleSilenceScript()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:var(--text-secondary);padding:4px 10px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;">💡 샘플 대본</button>
+            </div>
+        </div>
+        <textarea id="silenceScriptInput" rows="4" style="width:100%;background:#090d16;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px;color:#f8fafc;font-size:13px;line-height:1.5;resize:vertical;box-sizing:border-box;outline:none;font-family:inherit;" placeholder="여기에 오디오 대본 텍스트를 입력하세요. Vrew처럼 15자 내외 의미 단위로 자막이 자동 분할됩니다."></textarea>
+    </div>
+
+    <!-- 최종 실행 액션 바 -->
+    <div class="action-bar">
+        <div class="action-btns">
+            <button class="btn-action btn-apply" onclick="runSilenceApply()" id="btnSilenceApply" disabled>
+                <span>⚡ 무음제거 / 배속 적용하기</span>
+            </button>
+            <button class="btn-action btn-download" onclick="downloadSilenceResult()" id="btnSilenceDownload" disabled>
+                <span>💾 최종 오디오 저장</span>
+            </button>
+            <button class="btn-action btn-srt" onclick="generateAndDownloadSilenceSRT()" id="btnSilenceSRT">
+                <span>📜 SRT 자막 다운로드</span>
+            </button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);">
+            탐지된 무음 구간 수: <strong id="silenceTotalListCount" style="color:var(--yellow);">0개</strong>
+        </div>
+    </div>
+
+    <!-- 감지 구간 목록 -->
+    <div class="card" style="padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:#f8fafc;margin-bottom:10px;">📋 무음 감지 구간 세부 관리</div>
+        <div id="silenceDetailList">
+            <div style="font-size:11px;color:#64748b;text-align:center;padding:16px 0;">오디오 파일 업로드 후 [무음 구간 감지하기]를 진행해주세요.</div>
+        </div>
+    </div>
+
+</div><!-- /main-content -->
+
+<!-- Toast -->
+<div id="toastMsg"></div>
+
+<script>
+// showToast 공통 함수
+window.showToast = function(msg, duration = 3000) {
+    const el = document.getElementById('toastMsg');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('show'), duration);
+};
+// 윈도우 전역 드래그 앤 드롭 지원
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        onSilenceFileSelected({ target: { files: e.dataTransfer.files } });
+    }
+});
+</script>
+<script src="js/silence_editor.js"></script>
+
+</body>
+</html>
